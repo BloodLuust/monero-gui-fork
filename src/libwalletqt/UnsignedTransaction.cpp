@@ -28,6 +28,7 @@
 
 #include "UnsignedTransaction.h"
 #include <QVector>
+#include <QtCore5Compat/QVector>
 #include <QDebug>
 
 UnsignedTransaction::Status UnsignedTransaction::status() const

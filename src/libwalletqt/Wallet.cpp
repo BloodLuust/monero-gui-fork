@@ -55,6 +55,7 @@
 #include <QtConcurrent/QtConcurrent>
 #include <QList>
 #include <QVector>
+#include <QtCore5Compat/QVector>
 #include <QMutexLocker>
 
 #include "qt/ScopeGuard.h"

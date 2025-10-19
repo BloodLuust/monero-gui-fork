@@ -13,13 +13,13 @@
         "libunwind",
         "protobuf",
         "libgcrypt",
-        "qt5-base",
-        "qt5-declarative",
-        "qt5-quickcontrols",
-        "qt5-quickcontrols2",
-        "qt5-graphicaleffects",
-        "qt5-svg",
-        "qt5-multimedia",
-        "qt5-tools"
+        "qt6-base",
+        "qt6-declarative",
+        "qt6-quickcontrols",
+        "qt6-quickcontrols2",
+        "qt6-graphicaleffects",
+        "qt6-svg",
+        "qt6-multimedia",
+        "qt6-tools"
     ]
 }
