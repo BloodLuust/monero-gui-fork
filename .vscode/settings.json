@@ -1,0 +1,15 @@
+{
+    "cmake.configureSettings": {
+        "CMAKE_TOOLCHAIN_FILE": "/Users/gjeane/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON"
+    },
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "[qml]": {
+        "editor.defaultFormatter": "Delgan.qml-format",
+        "editor.formatOnSave": true
+    },
+    "editor.codeActionsOnSave": {
+        "source.fixAll.shellcheck": "explicit"
+    }
+}

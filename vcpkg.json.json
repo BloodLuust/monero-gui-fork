@@ -1,0 +1,25 @@
+{
+    "name": "monero-gui",
+    "version-string": "0.18.3.3",
+    "dependencies": [
+        "openssl",
+        "boost",
+        "unbound",
+        "hidapi",
+        "zeromq",
+        "libsodium",
+        "miniupnpc",
+        "expat",
+        "libunwind",
+        "protobuf",
+        "libgcrypt",
+        "qt5-base",
+        "qt5-declarative",
+        "qt5-quickcontrols",
+        "qt5-quickcontrols2",
+        "qt5-graphicaleffects",
+        "qt5-svg",
+        "qt5-multimedia",
+        "qt5-tools"
+    ]
+}

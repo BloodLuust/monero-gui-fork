@@ -1,0 +1,237 @@
+# Qt6 Migration Guide
+
+## Overview
+This rule provides guidance for migrating from Qt 5.15 to Qt 6, based on the official Qt6 porting guide. Focus on breaking changes, deprecated modules, and migration strategies.
+
+## Key Breaking Changes
+
+### 1. Deprecated Qt Quick Controls 1
+**Issue**: Qt Quick Controls 1 is deprecated and removed in Qt 6.
+
+**Migration Strategy**:
+- Replace `import QtQuick.Controls 1.x` with `import QtQuick.Controls 2.x`
+- Update component usage:
+  ```qml
+  // Qt 5 (deprecated)
+  import QtQuick.Controls 1.4
+  Button {
+      text: "Click me"
+  }
+  
+  // Qt 6
+  import QtQuick.Controls 2.15
+  Button {
+      text: "Click me"
+  }
+  ```
+- Review and update all QML files using Qt Quick Controls 1
+- Test UI behavior as Controls 2 may have different styling
+
+### 2. Qt5Compat Module Usage
+**Purpose**: Provides compatibility layer for Qt 5 code during migration.
+
+**Implementation**:
+```cmake
+# CMakeLists.txt
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Qt5Compat)
+
+target_link_libraries(your_target
+    Qt6::Core
+    Qt6::Widgets
+    Qt6::Qt5Compat
+)
+```
+
+**C++ Usage**:
+```cpp
+// For Qt5Compat features
+#include <Qt5Compat/Qt5Compat>
+// Use Qt5Compat for gradual migration
+```
+
+### 3. QtCore API Changes
+
+#### QString Changes
+```cpp
+// Qt 5
+QString str = "Hello";
+int index = str.indexOf("e"); // Returns -1 if not found
+
+// Qt 6 - Use qsizetype for size-related operations
+qsizetype index = str.indexOf("e");
+```
+
+#### QVariant Changes
+```cpp
+// Qt 5
+QVariant variant = 42;
+int value = variant.toInt();
+
+// Qt 6 - More explicit type handling
+QVariant variant = 42;
+int value = variant.toInt(); // Still works, but be explicit about types
+```
+
+#### QList/QVector Unification
+```cpp
+// Qt 5
+QVector<int> vector;
+QList<int> list;
+
+// Qt 6 - QVector is now an alias for QList
+QList<int> list; // Use QList for all cases
+```
+
+### 4. QtGui API Changes
+
+#### QFont Changes
+```cpp
+// Qt 5
+QFont font("Arial", 12);
+font.setPixelSize(16);
+
+// Qt 6 - More consistent font handling
+QFont font("Arial", 12);
+font.setPixelSize(16); // Still works
+```
+
+#### QPixmap/QImage Changes
+```cpp
+// Qt 5
+QPixmap pixmap = QPixmap::fromImage(image);
+
+// Qt 6 - More explicit conversion
+QPixmap pixmap = QPixmap::fromImage(image);
+```
+
+### 5. QtWidgets API Changes
+
+#### QApplication Changes
+```cpp
+// Qt 5
+QApplication app(argc, argv);
+
+// Qt 6 - Same API, but ensure proper initialization
+QApplication app(argc, argv);
+```
+
+#### Layout Changes
+```cpp
+// Qt 5
+QVBoxLayout *layout = new QVBoxLayout();
+layout->addWidget(widget);
+
+// Qt 6 - Same API, but check for deprecated methods
+QVBoxLayout *layout = new QVBoxLayout();
+layout->addWidget(widget);
+```
+
+### 6. QML Import Statement Changes
+
+#### New Import Syntax
+```qml
+// Qt 5
+import QtQuick 2.15
+import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
+
+// Qt 6
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+// Version numbers are optional in Qt 6
+```
+
+#### Module-Specific Changes
+```qml
+// Qt 5
+import QtQuick.Controls 1.4
+import QtQuick.Dialogs 1.3
+
+// Qt 6
+import QtQuick.Controls
+import QtQuick.Dialogs
+// Note: Some modules may have different APIs
+```
+
+## Migration Checklist
+
+### Phase 1: Preparation
+- [ ] Update CMakeLists.txt to use Qt6
+- [ ] Add Qt5Compat module for gradual migration
+- [ ] Review all QML files for Qt Quick Controls 1 usage
+- [ ] Identify deprecated API usage in C++ code
+
+### Phase 2: QML Migration
+- [ ] Replace all `import QtQuick.Controls 1.x` with `import QtQuick.Controls 2.x`
+- [ ] Update QML import statements to remove version numbers where appropriate
+- [ ] Test all QML components for visual and behavioral changes
+- [ ] Update custom QML components to use Controls 2 syntax
+
+### Phase 3: C++ API Updates
+- [ ] Replace `QVector` with `QList` throughout codebase
+- [ ] Update size-related operations to use `qsizetype`
+- [ ] Review and update `QVariant` usage
+- [ ] Check for deprecated QtGui/QtWidgets API usage
+
+### Phase 4: Testing and Validation
+- [ ] Run comprehensive tests on all platforms
+- [ ] Verify UI behavior matches Qt 5 version
+- [ ] Performance testing to ensure no regressions
+- [ ] Memory usage validation
+
+## Common Pitfalls to Avoid
+
+### 1. Mixing Qt5 and Qt6 APIs
+```cpp
+// Avoid mixing APIs
+QList<int> qt6List; // Qt 6 style
+QVector<int> qt5Vector; // Qt 5 style - avoid
+```
+
+### 2. Incorrect QML Import Versions
+```qml
+// Avoid specifying versions when not needed
+import QtQuick 6.0 // Unnecessary version specification
+import QtQuick.Controls 6.0 // May cause issues
+```
+
+### 3. Forgetting Qt5Compat
+```cmake
+# Always include Qt5Compat for migration
+find_package(Qt6 REQUIRED COMPONENTS Qt5Compat)
+```
+
+## Testing Strategy
+
+### Unit Tests
+- Update test cases to use Qt6 APIs
+- Verify all existing functionality works
+- Add tests for new Qt6 features
+
+### Integration Tests
+- Test QML-C++ integration points
+- Verify signal/slot connections work correctly
+- Test custom QML components
+
+### UI Tests
+- Visual regression testing
+- Cross-platform compatibility
+- Performance benchmarking
+
+## Resources
+
+- [Official Qt6 Porting Guide](https://doc.qt.io/qt-6/portingguide.html)
+- [Qt6 New Features](https://doc.qt.io/qt-6/whatsnew60.html)
+- [Qt5Compat Module Documentation](https://doc.qt.io/qt-6/qt5compat-index.html)
+- [Qt6 Migration Examples](https://doc.qt.io/qt-6/portingguide.html#examples)
+
+## Notes for Monero GUI
+
+Given this is a cryptocurrency wallet application:
+- Pay special attention to security-related Qt APIs
+- Test thoroughly on all target platforms (Windows, macOS, Linux)
+- Ensure crypto operations remain secure after migration
+- Validate all Qt network and file I/O operations
+- Test Qt's OpenGL integration if used for QR code scanning

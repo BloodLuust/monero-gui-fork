@@ -1,0 +1,414 @@
+# C++20 Upgrade Guide
+
+## Overview
+This rule provides guidance for upgrading from C++17 to C++20 in the Monero GUI codebase. Focus on identifying deprecated patterns, adopting modern C++20 features, and ensuring non-disruptive upgrades.
+
+## Key C++20 Features to Adopt
+
+### 1. Concepts (Type Constraints)
+**Purpose**: Improve template code clarity and error messages.
+
+**Before (C++17)**:
+```cpp
+template<typename T>
+void processContainer(T& container) {
+    // No compile-time validation of T's capabilities
+    for (auto& item : container) {
+        // Process item
+    }
+}
+```
+
+**After (C++20)**:
+```cpp
+#include <concepts>
+
+template<typename T>
+requires std::ranges::range<T>
+void processContainer(T& container) {
+    for (auto& item : container) {
+        // Process item
+    }
+}
+
+// Or using terse syntax
+template<std::ranges::range T>
+void processContainer(T& container) {
+    for (auto& item : container) {
+        // Process item
+    }
+}
+```
+
+**Monero GUI Application**:
+```cpp
+// For wallet data processing
+template<typename Container>
+requires std::ranges::range<Container> && 
+         std::convertible_to<typename Container::value_type, QString>
+void processWalletData(const Container& data) {
+    for (const auto& item : data) {
+        // Process wallet data safely
+    }
+}
+```
+
+### 2. Ranges Library
+**Purpose**: Simplify container operations and improve readability.
+
+**Before (C++17)**:
+```cpp
+std::vector<int> numbers = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+std::vector<int> evenNumbers;
+std::copy_if(numbers.begin(), numbers.end(), 
+             std::back_inserter(evenNumbers),
+             [](int n) { return n % 2 == 0; });
+```
+
+**After (C++20)**:
+```cpp
+#include <ranges>
+
+std::vector<int> numbers = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+auto evenNumbers = numbers | std::views::filter([](int n) { return n % 2 == 0; });
+```
+
+**Monero GUI Application**:
+```cpp
+// For transaction filtering
+auto highValueTransactions = transactions 
+    | std::views::filter([](const Transaction& tx) { return tx.amount > 1000; })
+    | std::views::transform([](const Transaction& tx) { return tx.id; });
+```
+
+### 3. Three-Way Comparison (<=>)
+**Purpose**: Simplify comparison operator implementations.
+
+**Before (C++17)**:
+```cpp
+class Transaction {
+    int amount;
+    std::string id;
+public:
+    bool operator<(const Transaction& other) const {
+        if (amount != other.amount) return amount < other.amount;
+        return id < other.id;
+    }
+    bool operator==(const Transaction& other) const {
+        return amount == other.amount && id == other.id;
+    }
+    // Need to implement all other comparison operators
+};
+```
+
+**After (C++20)**:
+```cpp
+class Transaction {
+    int amount;
+    std::string id;
+public:
+    auto operator<=>(const Transaction& other) const = default;
+    // Automatically generates all comparison operators
+};
+```
+
+### 4. Modules (Optional for Large Codebases)
+**Purpose**: Improve compilation times and reduce header dependencies.
+
+**Before (C++17)**:
+```cpp
+// wallet.h
+#pragma once
+#include <string>
+#include <vector>
+#include <memory>
+
+class Wallet {
+    // Implementation
+};
+```
+
+**After (C++20)**:
+```cpp
+// wallet.cppm
+module;
+#include <string>
+#include <vector>
+#include <memory>
+
+export module wallet;
+
+export class Wallet {
+    // Implementation
+};
+```
+
+## Deprecated C++17 Patterns to Replace
+
+### 1. std::result_of (Deprecated)
+**Replace with**: `std::invoke_result`
+
+```cpp
+// C++17 (deprecated)
+template<typename F, typename... Args>
+using result_type = std::result_of_t<F(Args...)>;
+
+// C++20
+template<typename F, typename... Args>
+using result_type = std::invoke_result_t<F, Args...>;
+```
+
+### 2. std::unary_function and std::binary_function
+**Replace with**: Lambda expressions or custom functors
+
+```cpp
+// C++17 (deprecated)
+struct CompareTransactions : std::binary_function<Transaction, Transaction, bool> {
+    bool operator()(const Transaction& a, const Transaction& b) const {
+        return a.amount < b.amount;
+    }
+};
+
+// C++20
+auto compareTransactions = [](const Transaction& a, const Transaction& b) {
+    return a.amount < b.amount;
+};
+```
+
+### 3. std::iterator (Deprecated)
+**Replace with**: Custom iterator implementation or ranges
+
+```cpp
+// C++17 (deprecated)
+class TransactionIterator : public std::iterator<std::forward_iterator_tag, Transaction> {
+    // Implementation
+};
+
+// C++20
+class TransactionIterator {
+public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = Transaction;
+    using difference_type = std::ptrdiff_t;
+    using pointer = Transaction*;
+    using reference = Transaction&;
+    // Implementation
+};
+```
+
+## Non-Disruptive Upgrade Strategies
+
+### 1. Gradual Adoption
+```cpp
+// Start with simple concepts
+template<typename T>
+concept Numeric = std::integral<T> || std::floating_point<T>;
+
+template<Numeric T>
+T calculateBalance(const std::vector<T>& transactions) {
+    return std::accumulate(transactions.begin(), transactions.end(), T{});
+}
+```
+
+### 2. Backward Compatibility
+```cpp
+// Use feature detection
+#if __cpp_concepts >= 201907L
+template<typename T>
+concept WalletData = requires(T t) {
+    t.getAmount();
+    t.getId();
+};
+#else
+// Fallback for older compilers
+template<typename T>
+struct is_wallet_data : std::false_type {};
+#endif
+```
+
+### 3. Incremental Range Adoption
+```cpp
+// Start with simple range operations
+std::vector<Transaction> transactions = getTransactions();
+auto highValueTx = transactions | std::views::filter([](const auto& tx) {
+    return tx.amount > 1000;
+});
+
+// Convert to vector if needed for compatibility
+std::vector<Transaction> result(std::ranges::begin(highValueTx), 
+                                std::ranges::end(highValueTx));
+```
+
+## Monero GUI Specific Upgrades
+
+### 1. Qt Integration with C++20
+```cpp
+// Use concepts with Qt types
+template<typename T>
+concept QtStringLike = std::convertible_to<T, QString>;
+
+template<QtStringLike T>
+void processQtString(const T& str) {
+    // Safe to use with QString, QStringView, etc.
+}
+```
+
+### 2. Crypto Operations with Concepts
+```cpp
+template<typename T>
+concept CryptoKey = requires(T key) {
+    key.size();
+    key.data();
+    { key.isValid() } -> std::convertible_to<bool>;
+};
+
+template<CryptoKey T>
+bool validateKey(const T& key) {
+    return key.isValid() && key.size() > 0;
+}
+```
+
+### 3. Wallet Data Processing
+```cpp
+// Use ranges for transaction processing
+auto processTransactions(const std::vector<Transaction>& transactions) {
+    return transactions
+        | std::views::filter([](const auto& tx) { return tx.isValid(); })
+        | std::views::transform([](const auto& tx) { return tx.getAmount(); })
+        | std::views::filter([](const auto& amount) { return amount > 0; });
+}
+```
+
+## Migration Checklist
+
+### Phase 1: Preparation
+- [ ] Update CMakeLists.txt to require C++20
+- [ ] Verify compiler support for C++20 features
+- [ ] Update build system and CI/CD pipelines
+- [ ] Review existing template code for concept opportunities
+
+### Phase 2: Core Library Updates
+- [ ] Replace `std::result_of` with `std::invoke_result`
+- [ ] Remove deprecated `std::iterator` usage
+- [ ] Update custom iterators to C++20 style
+- [ ] Replace `std::unary_function`/`std::binary_function` with lambdas
+
+### Phase 3: Feature Adoption
+- [ ] Add concepts for template constraints
+- [ ] Implement three-way comparison for custom types
+- [ ] Gradually adopt ranges for container operations
+- [ ] Consider modules for large header files
+
+### Phase 4: Testing and Validation
+- [ ] Ensure all existing functionality works
+- [ ] Performance testing for range operations
+- [ ] Memory usage validation
+- [ ] Cross-platform compatibility testing
+
+## Compiler Requirements
+
+### Minimum Versions
+- **GCC**: 10.0+ (full C++20 support)
+- **Clang**: 10.0+ (full C++20 support)
+- **MSVC**: 19.29+ (Visual Studio 2019 16.11+)
+
+### Feature Detection
+```cpp
+// Check for C++20 features
+#if __cpp_concepts >= 201907L
+    // Concepts available
+#endif
+
+#if __cpp_lib_ranges >= 201911L
+    // Ranges library available
+#endif
+
+#if __cpp_three_way_comparison >= 201907L
+    // Three-way comparison available
+#endif
+```
+
+## Performance Considerations
+
+### 1. Ranges Performance
+```cpp
+// Ranges are lazy - no performance penalty for unused operations
+auto expensiveOperation = data 
+    | std::views::filter(predicate)  // Only executed if needed
+    | std::views::transform(expensive_function);  // Only for filtered items
+```
+
+### 2. Concepts Compile Time
+```cpp
+// Concepts can improve compile times by failing fast
+template<typename T>
+concept ValidTransaction = requires(T t) {
+    t.amount;
+    t.id;
+    { t.isValid() } -> std::convertible_to<bool>;
+};
+
+// Compiler error at concept level, not deep in template instantiation
+template<ValidTransaction T>
+void processTransaction(const T& t) { /* ... */ }
+```
+
+## Common Pitfalls to Avoid
+
+### 1. Overusing Concepts
+```cpp
+// Don't over-constrain
+template<typename T>
+requires std::copyable<T> && std::movable<T> && std::default_constructible<T>
+void simpleFunction(T t) { /* ... */ }
+
+// Better: Use when it adds value
+template<typename T>
+requires std::ranges::range<T>
+void processRange(T&& range) { /* ... */ }
+```
+
+### 2. Premature Range Adoption
+```cpp
+// Don't force ranges where traditional loops are clearer
+for (const auto& transaction : transactions) {
+    if (transaction.isValid()) {
+        processTransaction(transaction);
+    }
+}
+
+// Ranges are better for functional-style operations
+auto validTransactions = transactions | std::views::filter(&Transaction::isValid);
+```
+
+### 3. Breaking Existing APIs
+```cpp
+// Maintain backward compatibility
+class Wallet {
+public:
+    // Keep existing API
+    std::vector<Transaction> getTransactions() const;
+    
+    // Add new C++20 API alongside
+    auto getTransactionRange() const {
+        return transactions | std::views::all;
+    }
+};
+```
+
+## Resources
+
+- [C++20 Standard Draft](https://eel.is/c++draft/)
+- [cppreference.com C++20](https://en.cppreference.com/w/cpp/20)
+- [Concepts Tutorial](https://en.cppreference.com/w/cpp/language/constraints)
+- [Ranges Library](https://en.cppreference.com/w/cpp/ranges)
+- [Three-Way Comparison](https://en.cppreference.com/w/cpp/language/operator_comparison)
+
+## Notes for Monero GUI
+
+Given this is a cryptocurrency application:
+- Prioritize security and correctness over performance optimizations
+- Test thoroughly with crypto operations and Qt integration
+- Ensure memory safety with new C++20 features
+- Validate all wallet operations after upgrades
+- Consider the impact on cross-platform builds

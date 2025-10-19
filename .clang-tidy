@@ -1,0 +1,59 @@
+---
+# Monero GUI clang-tidy configuration
+# Suitable for large C++14/17 codebase with Qt5
+
+Checks: >
+  bugprone-*,
+  modernize-*,
+  performance-*,
+  readability-*,
+  -llvm-include-order,
+  -modernize-use-trailing-return-type,
+  -readability-magic-numbers,
+  -readability-braces-around-statements,
+  -readability-else-after-return,
+  -readability-implicit-bool-conversion,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  -readability-identifier-length,
+  -readability-function-cognitive-complexity
+
+WarningsAsErrors: ''
+HeaderFilterRegex: '(src|monero/src)/.*\.(h|hpp)$'
+FormatStyle: file
+CheckOptions:
+  - key: readability-identifier-naming.NamespaceCase
+    value: lower_case
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase
+  - key: readability-identifier-naming.FunctionCase
+    value: camelBack
+  - key: readability-identifier-naming.VariableCase
+    value: camelBack
+  - key: readability-identifier-naming.PrivateMemberPrefix
+    value: m_
+  - key: readability-identifier-naming.ProtectedMemberPrefix
+    value: m_
+  - key: readability-identifier-naming.ConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.EnumConstantCase
+    value: CamelCase
+  - key: modernize-use-nullptr.NullMacros
+    value: 'NULL'
+  - key: modernize-loop-convert.MinConfidence
+    value: reasonable
+  - key: performance-move-const-arg.CheckTriviallyCopyableMove
+    value: 'false'
+  - key: readability-function-size.LineThreshold
+    value: '200'
+  - key: readability-function-size.StatementThreshold
+    value: '400'
+  - key: bugprone-assert-side-effect.AssertMacros
+    value: 'assert,CHECK_AND_ASSERT_THROW_MES'
+  - key: bugprone-string-constructor.WarnOnLargeLength
+    value: '1'
+  - key: performance-unnecessary-value-param.AllowedTypes
+    value: 'QString;QByteArray;QVariant'
+
