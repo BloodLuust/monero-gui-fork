@@ -132,38 +132,138 @@ I2PManager::Status I2PManager::status() const
 
 void I2PManager::start()
 {
-    if (startI2PDaemon()) {
-        // Wait for I2P to be ready and get SOCKS address
-        QString socksAddress = QString("127.0.0.1:4447");
-        emit i2pReady(true, socksAddress);
-    } else {
-        emit i2pReady(false, QString());
+    if (m_status == Status::Connected || m_status == Status::Starting) {
+        qDebug() << "I2P daemon already running or starting";
+        return;
     }
+    
+    if (!QFileInfo::exists(m_daemonPath)) {
+        m_lastError = QString("I2P daemon not found at: %1").arg(m_daemonPath);
+        emit errorOccurred(m_lastError);
+        emit i2pReady(false, QString());
+        return;
+    }
+    
+    // Create data directory if it doesn't exist
+    QDir().mkpath(m_dataDir);
+    
+    // Set up process arguments for i2pd
+    QStringList arguments;
+    arguments << "--daemon=false";           // Run in foreground
+    arguments << "--log=stdout";            // Log to stdout
+    arguments << "--socksproxy.port=4447";  // SOCKS proxy port
+    arguments << "--datadir=" + m_dataDir;  // Data directory
+    arguments << "--reseed.verify=false";  // Skip reseed verification for faster startup
+    arguments << "--i2p.port=7654";         // I2P router port
+    arguments << "--i2p.host=127.0.0.1";   // I2P router host
+    
+    // Start the I2P daemon process
+    m_daemonProcess->setProgram(m_daemonPath);
+    m_daemonProcess->setArguments(arguments);
+    
+    qDebug() << "Starting I2P daemon:" << m_daemonPath << arguments;
+    
+    // Update status to starting
+    m_status = Status::Starting;
+    emit statusChanged(m_status);
+    
+    m_daemonProcess->start();
+    
+    if (!m_daemonProcess->waitForStarted(5000)) {
+        m_lastError = QString("Failed to start I2P daemon: %1").arg(m_daemonProcess->errorString());
+        emit errorOccurred(m_lastError);
+        m_status = Status::Error;
+        emit statusChanged(m_status);
+        emit i2pReady(false, QString());
+        return;
+    }
+    
+    qDebug() << "I2P daemon process started successfully";
 }
 
 void I2PManager::stop()
 {
-    if (stopI2PDaemon()) {
-        emit i2pStopped();
+    if (m_status == Status::Disconnected || m_status == Status::Stopping) {
+        qDebug() << "I2P daemon not running";
+        return;
     }
+    
+    qDebug() << "Stopping I2P daemon";
+    
+    // Update status to stopping
+    m_status = Status::Stopping;
+    emit statusChanged(m_status);
+    
+    // Stop status timer
+    if (m_statusTimer->isActive()) {
+        m_statusTimer->stop();
+    }
+    
+    // Gracefully terminate the process
+    if (m_daemonProcess && m_daemonProcess->state() == QProcess::Running) {
+        m_daemonProcess->terminate();
+        
+        // Wait for graceful termination
+        if (!m_daemonProcess->waitForFinished(10000)) {
+            qDebug() << "I2P daemon did not stop gracefully, killing process";
+            m_daemonProcess->kill();
+            m_daemonProcess->waitForFinished(5000);
+        }
+    }
+    
+    // Update status to disconnected
+    m_status = Status::Disconnected;
+    emit statusChanged(m_status);
+    emit runningChanged(false);
+    emit i2pStopped();
+    
+    qDebug() << "I2P daemon stopped";
 }
 
 void I2PManager::generateNewIdentity()
 {
-    if (m_status != Status::Connected) {
-        m_lastError = "I2P daemon not connected";
-        emit errorOccurred(m_lastError);
-        return;
+    qDebug() << "Generating new I2P identity";
+    
+    // Stop the current daemon if running
+    if (m_status == Status::Connected || m_status == Status::Starting) {
+        stop();
     }
     
-    // Send command to generate new identity
-    QString command = "router generateIdentity";
-    if (sendDaemonCommand(command)) {
-        qDebug() << "New I2P identity generation requested";
-    } else {
-        m_lastError = "Failed to generate new identity";
-        emit errorOccurred(m_lastError);
+    // Delete key files from the managed data directory
+    QString keyDir = m_dataDir + "/netDb";
+    QString routerDir = m_dataDir + "/router";
+    
+    // Remove network database (contains peer information)
+    if (QDir(keyDir).exists()) {
+        QDir(keyDir).removeRecursively();
+        qDebug() << "Removed network database directory:" << keyDir;
     }
+    
+    // Remove router keys (contains identity keys)
+    if (QDir(routerDir).exists()) {
+        QDir(routerDir).removeRecursively();
+        qDebug() << "Removed router keys directory:" << routerDir;
+    }
+    
+    // Remove other identity-related files
+    QStringList identityFiles = {
+        m_dataDir + "/routerInfo.dat",
+        m_dataDir + "/router.keys",
+        m_dataDir + "/i2p.key",
+        m_dataDir + "/i2p.leaseSet"
+    };
+    
+    for (const QString& file : identityFiles) {
+        if (QFile::exists(file)) {
+            QFile::remove(file);
+            qDebug() << "Removed identity file:" << file;
+        }
+    }
+    
+    qDebug() << "I2P identity files removed, restarting daemon";
+    
+    // Restart the daemon with new identity
+    start();
 }
 
 bool I2PManager::startI2PDaemon()
@@ -258,15 +358,6 @@ bool I2PManager::restartI2PDaemon()
     return startI2PDaemon();
 }
 
-I2PManager::Status I2PManager::getStatus() const
-{
-    return m_status;
-}
-
-bool I2PManager::isRunning() const
-{
-    return m_status == Status::Connected;
-}
 
 void I2PManager::setConfiguration(const QJsonObject& config)
 {
@@ -503,15 +594,23 @@ void I2PManager::onProcessStateChanged(QProcess::ProcessState newState)
     
     switch (newState) {
     case QProcess::NotRunning:
-        if (m_status != Status::Stopping) {
-            updateStatus();
+        if (m_status != Status::Stopping && m_status != Status::Disconnected) {
+            m_status = Status::Disconnected;
+            emit statusChanged(m_status);
+            emit runningChanged(false);
+            qDebug() << "I2P daemon process stopped";
         }
         break;
     case QProcess::Starting:
-        updateStatus();
+        if (m_status != Status::Starting) {
+            m_status = Status::Starting;
+            emit statusChanged(m_status);
+            qDebug() << "I2P daemon process starting";
+        }
         break;
     case QProcess::Running:
-        updateStatus();
+        // Process is running, but we wait for specific log messages to confirm readiness
+        qDebug() << "I2P daemon process running, waiting for readiness confirmation";
         break;
     }
 }
@@ -523,7 +622,10 @@ void I2PManager::onProcessError(QProcess::ProcessError error)
     m_lastError = QString("I2P daemon process error: %1").arg(m_daemonProcess->errorString());
     emit errorOccurred(m_lastError);
     
-    updateStatus();
+    m_status = Status::Error;
+    emit statusChanged(m_status);
+    emit runningChanged(false);
+    emit i2pReady(false, QString());
 }
 
 void I2PManager::onProcessOutput()
@@ -540,11 +642,18 @@ void I2PManager::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus
 {
     qDebug() << "I2P daemon process finished, exit code:" << exitCode << "exit status:" << exitStatus;
     
-    updateStatus();
-    
     if (exitStatus == QProcess::CrashExit) {
         m_lastError = "I2P daemon crashed";
         emit errorOccurred(m_lastError);
+        m_status = Status::Error;
+        emit statusChanged(m_status);
+        emit runningChanged(false);
+        emit i2pReady(false, QString());
+    } else if (m_status != Status::Stopping) {
+        // Normal exit when not explicitly stopping
+        m_status = Status::Disconnected;
+        emit statusChanged(m_status);
+        emit runningChanged(false);
     }
 }
 
@@ -635,14 +744,58 @@ void I2PManager::updateStatus()
 
 void I2PManager::parseDaemonOutput(const QString& output)
 {
-    // Parse daemon output for status information
-    if (output.contains("I2P router started")) {
-        updateStatus();
-    } else if (output.contains("I2P router stopped")) {
-        updateStatus();
-    } else if (output.contains("error", Qt::CaseInsensitive)) {
-        m_lastError = output;
+    qDebug() << "I2P daemon output:" << output;
+    
+    // Check for SOCKS proxy startup
+    if (output.contains("SOCKS proxy started", Qt::CaseInsensitive)) {
+        qDebug() << "SOCKS proxy started successfully";
+    }
+    
+    // Check for network status OK
+    if (output.contains("Network status: OK", Qt::CaseInsensitive)) {
+        qDebug() << "I2P network status: OK";
+        
+        // If we have both SOCKS proxy and network OK, emit i2pReady
+        if (m_status == Status::Starting) {
+            m_status = Status::Connected;
+            emit statusChanged(m_status);
+            emit runningChanged(true);
+            
+            QString socksAddress = "127.0.0.1:4447";
+            emit i2pReady(true, socksAddress);
+            qDebug() << "I2P daemon ready with SOCKS proxy:" << socksAddress;
+        }
+    }
+    
+    // Check for critical errors
+    if (output.contains("Address already in use", Qt::CaseInsensitive)) {
+        m_lastError = "I2P port already in use. Please stop other I2P instances.";
         emit errorOccurred(m_lastError);
+        m_status = Status::Error;
+        emit statusChanged(m_status);
+        emit i2pReady(false, QString());
+    } else if (output.contains("Failed to bind", Qt::CaseInsensitive)) {
+        m_lastError = "I2P failed to bind to port. Port may be in use.";
+        emit errorOccurred(m_lastError);
+        m_status = Status::Error;
+        emit statusChanged(m_status);
+        emit i2pReady(false, QString());
+    } else if (output.contains("FATAL", Qt::CaseInsensitive) || 
+               output.contains("CRITICAL", Qt::CaseInsensitive)) {
+        m_lastError = "I2P daemon encountered a critical error: " + output;
+        emit errorOccurred(m_lastError);
+        m_status = Status::Error;
+        emit statusChanged(m_status);
+        emit i2pReady(false, QString());
+    }
+    
+    // Check for daemon shutdown
+    if (output.contains("I2P router stopped", Qt::CaseInsensitive) ||
+        output.contains("Shutting down", Qt::CaseInsensitive)) {
+        qDebug() << "I2P daemon shutting down";
+        m_status = Status::Disconnected;
+        emit statusChanged(m_status);
+        emit runningChanged(false);
     }
 }
 

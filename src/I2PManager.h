@@ -230,14 +230,14 @@ signals:
      * @brief Get list of all tunnels
      * @return List of tunnel information
      */
-    QList<TunnelInfo> getTunnels() const;
+    QList<I2PManager::TunnelInfo> getTunnels() const;
 
     /**
      * @brief Get tunnel information by ID
      * @param tunnelId Tunnel identifier
      * @return Tunnel information, or empty if not found
      */
-    TunnelInfo getTunnel(const QString& tunnelId) const;
+    I2PManager::TunnelInfo getTunnel(const QString& tunnelId) const;
 
     /**
      * @brief Enable or disable a tunnel
@@ -252,7 +252,7 @@ signals:
      * @brief Get current network statistics
      * @return Network statistics
      */
-    NetworkStats getNetworkStats() const;
+    I2PManager::NetworkStats getNetworkStats() const;
 
     /**
      * @brief Get I2P router information
@@ -457,6 +457,19 @@ private:
      * @param parent Parent QObject
      */
     explicit I2PManager(QObject *parent = nullptr);
+
+    // Private I2P daemon management methods
+    /**
+     * @brief Start the I2P daemon process
+     * @return true if start command was successful, false otherwise
+     */
+    bool startI2PDaemon();
+
+    /**
+     * @brief Stop the I2P daemon process
+     * @return true if stop command was successful, false otherwise
+     */
+    bool stopI2PDaemon();
 
     // Singleton implementation
     static I2PManager* s_instance;                 ///< Singleton instance pointer
