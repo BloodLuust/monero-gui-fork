@@ -52,6 +52,10 @@ public:
     void cancel();
     quint64 contentLength() const;
     quint64 received() const;
+    
+    // Qt6 meta-type system requires comparison operators
+    bool operator==(const HttpClient &other) const { return this == &other; }
+    bool operator<(const HttpClient &other) const { return this < &other; }
 
 signals:
     void contentLengthChanged() const;
@@ -96,3 +100,5 @@ private:
     QString m_proxyAddress;
     mutable FutureScheduler m_scheduler;
 };
+
+Q_DECLARE_METATYPE(HttpClient)

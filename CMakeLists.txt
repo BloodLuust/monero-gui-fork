@@ -135,6 +135,7 @@ set(QT6_LIBRARIES
   Qt6Qml
   Qt6Svg
   Qt6Xml
+  Qt6Widgets
 )
 
 if(WITH_SCANNER)

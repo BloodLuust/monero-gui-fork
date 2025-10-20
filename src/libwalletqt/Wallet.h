@@ -53,13 +53,17 @@ struct Wallet; // forward declaration
 
 class TransactionHistory;
 class TransactionHistoryModel;
-class TransactionHistorySortFilterModel;
+// Qt6 meta-type system requires full definitions for Q_PROPERTY types
+#include "model/TransactionHistorySortFilterModel.h"
 class AddressBook;
-class AddressBookModel;
+// Qt6 meta-type system requires full definitions for Q_PROPERTY types
+#include "model/AddressBookModel.h"
 class Subaddress;
-class SubaddressModel;
+// Qt6 meta-type system requires full definitions for Q_PROPERTY types
+#include "model/SubaddressModel.h"
 class SubaddressAccount;
-class SubaddressAccountModel;
+// Qt6 meta-type system requires full definitions for Q_PROPERTY types
+#include "model/SubaddressAccountModel.h"
 
 class Wallet : public QObject, public PassprasePrompter
 {

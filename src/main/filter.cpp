@@ -72,7 +72,7 @@ bool filter::eventFilter(QObject *obj, QEvent *ev) {
             sks = "Ctrl";
 #endif
         } else {
-            QKeySequence ks(ke->modifiers() + ke->key());
+            QKeySequence ks(ke->modifiers() | ke->key());
             sks = ks.toString();
         }
 #ifndef Q_OS_MAC
@@ -106,7 +106,7 @@ bool filter::eventFilter(QObject *obj, QEvent *ev) {
             sks = "Ctrl";
 #endif
         } else {
-            QKeySequence ks(ke->modifiers() + ke->key());
+            QKeySequence ks(ke->modifiers() | ke->key());
             sks = ks.toString();
         }
 #ifndef Q_OS_MAC
@@ -119,11 +119,11 @@ bool filter::eventFilter(QObject *obj, QEvent *ev) {
     } break;
     case QEvent::MouseButtonPress: {
         QMouseEvent *me = static_cast<QMouseEvent*>(ev);
-        emit mousePressed(QVariant::fromValue<QObject*>(obj), me->x(), me->y());
+        emit mousePressed(QVariant::fromValue<QObject*>(obj), me->position().x(), me->position().y());
     } break;
     case QEvent::MouseButtonRelease: {
         QMouseEvent *me = static_cast<QMouseEvent*>(ev);
-        emit mouseReleased(QVariant::fromValue<QObject*>(obj), me->x(), me->y());
+        emit mouseReleased(QVariant::fromValue<QObject*>(obj), me->position().x(), me->position().y());
     } break;
     default: break;
     }

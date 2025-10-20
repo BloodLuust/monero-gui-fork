@@ -34,9 +34,7 @@
 #include <QDebug>
 #include <QDesktopServices>
 #include <QObject>
-#include <QDesktopWidget>
 #include <QScreen>
-#include <QtCore5Compat/QDesktopWidget>
 #include <QThread>
 
 #include <version.h>
@@ -437,6 +435,8 @@ Verify update binary using 'shasum'-compatible (SHA256 algo) output signed by tw
     qRegisterMetaType<PendingTransaction::Priority>();
     qRegisterMetaType<TransactionInfo::Direction>();
     qRegisterMetaType<TransactionHistoryModel::TransactionInfoRole>();
+    qRegisterMetaType<HttpClient>();
+    qRegisterMetaType<std::shared_ptr<HttpClient>>();
 
     qRegisterMetaType<NetworkType::Type>();
     qmlRegisterType<NetworkType>("moneroComponents.NetworkType", 1, 0, "NetworkType");
