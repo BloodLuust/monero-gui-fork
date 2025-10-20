@@ -41,6 +41,16 @@
 #include "I2PManager.h"
 #include "qt/MoneroSettings.h"
 
+// Forward declaration for I2P integration
+struct StartParams {
+    QString flags;
+    NetworkType::Type nettype;
+    QString dataDir;
+    QString bootstrapNodeAddress;
+    bool noSync;
+    bool pruneBlockchain;
+};
+
 class DaemonManager : public QObject
 {
     Q_OBJECT
@@ -92,14 +102,6 @@ private:
     QString args = "";
 
     // I2P integration members
-    struct StartParams {
-        QString flags;
-        NetworkType::Type nettype;
-        QString dataDir;
-        QString bootstrapNodeAddress;
-        bool noSync;
-        bool pruneBlockchain;
-    };
     StartParams m_pendingStartParams;
     bool m_waitingForI2P = false;
 

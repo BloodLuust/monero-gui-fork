@@ -79,9 +79,7 @@ I2PManager::Status I2PManager::status() const
 
 void I2PManager::start()
 {
-    if (m_status == Status::Connected |
-
-| m_status == Status::Starting) {
+    if (m_status == Status::Connected || m_status == Status::Starting) {
         qDebug() << "I2P daemon already running or starting";
         return;
     }
