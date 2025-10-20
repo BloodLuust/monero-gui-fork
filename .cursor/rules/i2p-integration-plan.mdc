@@ -1,0 +1,299 @@
+# I2P Integration Blueprint
+
+## Description
+I2P Integration Blueprint - Comprehensive architectural plan for integrating I2P (Invisible Internet Project) functionality into the Monero GUI project, enabling anonymous network access for enhanced privacy and censorship resistance.
+
+## Always Apply
+true
+
+---
+
+# I2P Integration Architectural Blueprint
+
+## 🎯 Project Overview
+
+This blueprint outlines the complete integration of I2P (Invisible Internet Project) functionality into the Monero GUI project, providing users with anonymous network access for enhanced privacy and censorship resistance.
+
+## 🏗️ Architecture Components
+
+### 1. Core I2P Daemon Integration
+- **Binary Management**: Platform-specific i2pd binaries (Windows, macOS, Linux, Android)
+- **Process Management**: Start/stop/restart I2P daemon processes
+- **Configuration Management**: Dynamic I2P configuration updates
+- **Status Monitoring**: Real-time I2P network connectivity status
+
+### 2. Network Layer Integration
+- **I2P Proxy Configuration**: Automatic SOCKS proxy setup for Monero daemon
+- **Tunnel Management**: HTTP and SOCKS tunnel creation and management
+- **Address Resolution**: I2P address (.i2p) resolution and routing
+- **Network Switching**: Seamless switching between clearnet and I2P networks
+
+### 3. User Interface Components
+- **I2P Settings Panel**: Comprehensive I2P configuration interface
+- **Network Status Indicator**: Visual I2P connectivity status
+- **Tunnel Management UI**: User-friendly tunnel configuration
+- **Privacy Dashboard**: I2P network statistics and privacy metrics
+
+### 4. Security & Privacy Features
+- **Anonymous Routing**: All Monero traffic routed through I2P network
+- **Traffic Obfuscation**: I2P's garlic routing for traffic analysis resistance
+- **Censorship Resistance**: Bypass network-level censorship and blocking
+- **Privacy Metrics**: Real-time privacy and anonymity measurements
+
+## 🔧 Technical Implementation
+
+### Phase 1: Foundation (Completed ✅)
+- [x] **C++20 and Qt6 Migration**: Modernized codebase for I2P integration
+- [x] **I2P Daemon Binaries**: Downloaded and organized platform-specific i2pd binaries
+- [x] **CMake Integration**: Automated binary copying to application output
+- [x] **Directory Structure**: Created `external/i2pd/` with platform-specific binaries
+
+### Phase 2: Core I2P Manager (In Progress)
+- [ ] **I2PManager Class**: C++ class for I2P daemon process management
+- [ ] **Process Lifecycle**: Start, stop, restart, and monitor i2pd processes
+- [ ] **Configuration Engine**: Dynamic I2P configuration generation and updates
+- [ ] **Status Monitoring**: Real-time I2P network connectivity detection
+
+### Phase 3: Network Integration
+- [ ] **Proxy Configuration**: Automatic SOCKS proxy setup for Monero daemon
+- [ ] **Tunnel Management**: HTTP and SOCKS tunnel creation and management
+- [ ] **Address Resolution**: I2P address resolution and routing
+- [ ] **Network Switching**: Seamless clearnet/I2P network switching
+
+### Phase 4: User Interface
+- [ ] **I2P Settings Panel**: Comprehensive configuration interface
+- [ ] **Network Status Widget**: Visual I2P connectivity indicator
+- [ ] **Tunnel Management UI**: User-friendly tunnel configuration
+- [ ] **Privacy Dashboard**: I2P network statistics and metrics
+
+### Phase 5: Advanced Features
+- [ ] **Anonymous Routing**: Full I2P routing for Monero traffic
+- [ ] **Privacy Metrics**: Real-time anonymity measurements
+- [ ] **Censorship Resistance**: Network-level blocking bypass
+- [ ] **Performance Optimization**: I2P network performance tuning
+
+## 📁 File Structure
+
+```
+monero-gui/
+├── external/i2pd/                    # I2P daemon binaries
+│   ├── win64/i2pd.exe
+│   ├── osx-x86_64/i2pd
+│   ├── osx-arm64/i2pd
+│   ├── linux64/i2pd
+│   └── android-arm64/i2pd
+├── src/
+│   ├── i2p/                         # I2P integration source
+│   │   ├── I2PManager.h/.cpp        # Core I2P daemon management
+│   │   ├── I2PConfig.h/.cpp         # I2P configuration management
+│   │   ├── I2PStatus.h/.cpp         # I2P network status monitoring
+│   │   └── I2PTunnel.h/.cpp         # I2P tunnel management
+│   ├── qt/
+│   │   ├── I2PSettings.h/.cpp       # I2P settings UI
+│   │   ├── I2PStatusWidget.h/.cpp   # I2P status indicator
+│   │   └── I2PDashboard.h/.cpp      # I2P privacy dashboard
+│   └── pages/
+│       └── I2PSettings.qml          # I2P settings page
+└── components/
+    ├── I2PStatusIndicator.qml       # I2P status indicator
+    └── I2PTunnelManager.qml         # I2P tunnel management
+```
+
+## 🔌 API Integration Points
+
+### 1. I2PManager Class
+```cpp
+class I2PManager : public QObject
+{
+    Q_OBJECT
+public:
+    enum class Status { Disconnected, Connecting, Connected, Error };
+    
+    // Core functionality
+    bool startI2PDaemon();
+    bool stopI2PDaemon();
+    bool restartI2PDaemon();
+    Status getStatus() const;
+    
+    // Configuration
+    void setConfiguration(const I2PConfig& config);
+    I2PConfig getConfiguration() const;
+    
+    // Network management
+    bool createTunnel(const TunnelConfig& config);
+    bool destroyTunnel(const QString& tunnelId);
+    QList<TunnelInfo> getTunnels() const;
+    
+signals:
+    void statusChanged(Status status);
+    void tunnelCreated(const QString& tunnelId);
+    void tunnelDestroyed(const QString& tunnelId);
+    void errorOccurred(const QString& error);
+};
+```
+
+### 2. I2PConfig Class
+```cpp
+class I2PConfig
+{
+public:
+    // Network settings
+    QString proxyHost = "127.0.0.1";
+    int proxyPort = 4447;
+    bool enableHTTPProxy = true;
+    bool enableSOCKSProxy = true;
+    
+    // Tunnel settings
+    int httpTunnelPort = 4444;
+    int socksTunnelPort = 4447;
+    QString tunnelName = "monero-gui";
+    
+    // Performance settings
+    int bandwidthLimit = 0; // 0 = unlimited
+    int maxConnections = 100;
+    bool enableUPnP = false;
+    
+    // Privacy settings
+    bool enableFloodfill = false;
+    bool enableReseed = true;
+    QString reseedURL = "https://reseed.i2p.net";
+};
+```
+
+### 3. I2PStatus Class
+```cpp
+class I2PStatus : public QObject
+{
+    Q_OBJECT
+public:
+    enum class NetworkStatus { Offline, Connecting, Online, Error };
+    
+    // Status monitoring
+    NetworkStatus getNetworkStatus() const;
+    int getActiveTunnels() const;
+    int getInboundBandwidth() const;
+    int getOutboundBandwidth() const;
+    QString getRouterInfo() const;
+    
+    // Privacy metrics
+    double getAnonymityLevel() const;
+    int getPeersCount() const;
+    QString getNetworkID() const;
+    
+signals:
+    void networkStatusChanged(NetworkStatus status);
+    void bandwidthChanged(int inbound, int outbound);
+    void peersCountChanged(int count);
+};
+```
+
+## 🎨 User Interface Design
+
+### 1. I2P Settings Panel
+- **Network Configuration**: Proxy settings, tunnel configuration
+- **Performance Settings**: Bandwidth limits, connection limits
+- **Privacy Settings**: Floodfill participation, reseed configuration
+- **Advanced Options**: Custom I2P configuration, logging settings
+
+### 2. Network Status Indicator
+- **Visual Status**: Color-coded I2P connectivity status
+- **Quick Actions**: Start/stop I2P, toggle network mode
+- **Status Information**: Connection time, active tunnels, bandwidth usage
+
+### 3. Privacy Dashboard
+- **Network Statistics**: Peers count, bandwidth usage, tunnel status
+- **Privacy Metrics**: Anonymity level, network health
+- **Performance Metrics**: Connection speed, latency, reliability
+
+## 🔒 Security Considerations
+
+### 1. Privacy Protection
+- **Traffic Obfuscation**: All Monero traffic routed through I2P garlic routing
+- **Address Anonymization**: I2P addresses provide additional anonymity layer
+- **Metadata Protection**: I2P prevents traffic analysis and metadata leakage
+- **Censorship Resistance**: Bypass network-level blocking and censorship
+
+### 2. Security Measures
+- **Process Isolation**: I2P daemon runs in isolated process
+- **Configuration Validation**: Secure I2P configuration generation
+- **Error Handling**: Graceful fallback to clearnet if I2P fails
+- **Logging Security**: Secure logging without privacy leaks
+
+## 🚀 Implementation Roadmap
+
+### Phase 1: Foundation (Completed ✅)
+- [x] C++20 and Qt6 migration
+- [x] I2P daemon binary integration
+- [x] CMake build system integration
+
+### Phase 2: Core I2P Manager (Next)
+- [ ] I2PManager class implementation
+- [ ] Process lifecycle management
+- [ ] Configuration engine
+- [ ] Status monitoring system
+
+### Phase 3: Network Integration
+- [ ] Proxy configuration system
+- [ ] Tunnel management
+- [ ] Address resolution
+- [ ] Network switching logic
+
+### Phase 4: User Interface
+- [ ] I2P settings panel
+- [ ] Network status widget
+- [ ] Tunnel management UI
+- [ ] Privacy dashboard
+
+### Phase 5: Advanced Features
+- [ ] Anonymous routing
+- [ ] Privacy metrics
+- [ ] Censorship resistance
+- [ ] Performance optimization
+
+## 📊 Success Metrics
+
+### Technical Metrics
+- **I2P Integration**: Successful I2P daemon integration and management
+- **Network Connectivity**: Reliable I2P network connection establishment
+- **Performance**: Minimal impact on Monero GUI performance
+- **Compatibility**: Cross-platform I2P functionality
+
+### User Experience Metrics
+- **Ease of Use**: Simple I2P configuration and management
+- **Privacy Enhancement**: Improved anonymity and privacy protection
+- **Censorship Resistance**: Successful bypass of network restrictions
+- **Reliability**: Stable I2P network connectivity
+
+## 🔧 Development Guidelines
+
+### Code Standards
+- **C++20 Compliance**: Use modern C++20 features and best practices
+- **Qt6 Integration**: Leverage Qt6 framework for UI and networking
+- **Memory Management**: Proper resource management and cleanup
+- **Error Handling**: Comprehensive error handling and recovery
+
+### Testing Requirements
+- **Unit Testing**: Comprehensive unit tests for all I2P components
+- **Integration Testing**: End-to-end I2P functionality testing
+- **Platform Testing**: Cross-platform compatibility testing
+- **Performance Testing**: I2P network performance validation
+
+### Documentation
+- **API Documentation**: Complete API documentation for I2P components
+- **User Guide**: Comprehensive user guide for I2P features
+- **Developer Guide**: Technical documentation for I2P integration
+- **Troubleshooting**: Common issues and solutions guide
+
+---
+
+## 🎯 Project Goals
+
+The I2P integration project aims to provide Monero GUI users with:
+
+1. **Enhanced Privacy**: Anonymous network access through I2P routing
+2. **Censorship Resistance**: Bypass network-level blocking and restrictions
+3. **User-Friendly Interface**: Simple I2P configuration and management
+4. **Cross-Platform Support**: I2P functionality on all supported platforms
+5. **Performance Optimization**: Minimal impact on application performance
+
+This blueprint serves as the comprehensive guide for implementing I2P integration into the Monero GUI project, ensuring a robust, secure, and user-friendly anonymous networking solution.

@@ -156,6 +156,37 @@ endif()
 
 add_custom_command(TARGET monero-wallet-gui POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:daemon> $<TARGET_FILE_DIR:monero-wallet-gui>)
 
+# Copy platform-specific i2pd binary
+if(WIN32)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        # Windows 64-bit
+        add_custom_command(TARGET monero-wallet-gui POST_BUILD 
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/external/i2pd/win64/i2pd.exe $<TARGET_FILE_DIR:monero-wallet-gui>)
+    endif()
+elseif(APPLE)
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+        # macOS ARM64 (Apple Silicon)
+        add_custom_command(TARGET monero-wallet-gui POST_BUILD 
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/external/i2pd/osx-arm64/i2pd $<TARGET_FILE_DIR:monero-wallet-gui>)
+    else()
+        # macOS x86_64 (Intel)
+        add_custom_command(TARGET monero-wallet-gui POST_BUILD 
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/external/i2pd/osx-x86_64/i2pd $<TARGET_FILE_DIR:monero-wallet-gui>)
+    endif()
+elseif(UNIX AND NOT APPLE)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        # Linux 64-bit
+        add_custom_command(TARGET monero-wallet-gui POST_BUILD 
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/external/i2pd/linux64/i2pd $<TARGET_FILE_DIR:monero-wallet-gui>)
+    endif()
+elseif(ANDROID)
+    if(CMAKE_ANDROID_ARCH_ABI STREQUAL "arm64-v8a")
+        # Android ARM64
+        add_custom_command(TARGET monero-wallet-gui POST_BUILD 
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/external/i2pd/android-arm64/i2pd $<TARGET_FILE_DIR:monero-wallet-gui>)
+    endif()
+endif()
+
 include(Deploy)
 
 install(TARGETS monero-wallet-gui
