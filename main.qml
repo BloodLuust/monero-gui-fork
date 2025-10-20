@@ -44,6 +44,8 @@ import "version.js" as Version
 import "wizard"
 
 ApplicationWindow {
+    // committing transaction
+
     id: appWindow
 
     property var currentItem
@@ -462,10 +464,10 @@ ApplicationWindow {
         // If wallet isnt connected, advanced wallet mode and no daemon is running - Ask
         if (appWindow.walletMode >= 2 && !persistentSettings.useRemoteNode && !walletInitialized && disconnected)
             daemonManager.runningAsync(persistentSettings.nettype, persistentSettings.blockchainDataDir, function(running) {
-                if (!running)
-                    daemonManagerDialog.open();
+            if (!running)
+                daemonManagerDialog.open();
 
-            });
+        });
 
         // initialize transaction history once wallet is initialized first time;
         if (!walletInitialized) {
@@ -509,6 +511,8 @@ ApplicationWindow {
     }
 
     function onWalletOpened(wallet) {
+        // uri
+
         hideProcessingSplash();
         walletName = usefulName(wallet.path);
         console.log(">>> wallet opened: " + wallet);
@@ -549,7 +553,7 @@ ApplicationWindow {
             var queuedCmd = IPC.queuedCmd();
             if (/^\w+:\/\/(.*)$/.test(queuedCmd))
                 appWindow.onUriHandler(queuedCmd);
- // uri
+
         }
     }
 
@@ -913,8 +917,6 @@ ApplicationWindow {
     }
 
     function handleSweepUnmixable() {
-        // committing transaction
-
         console.log("Creating transaction: ");
         txConfirmationPopup.sweepUnmixable = true;
         transaction = currentWallet.createSweepUnmixableTransaction();
@@ -1277,8 +1279,8 @@ ApplicationWindow {
         const simpleModeFlags = "--enable-dns-blocklist --out-peers 16 --no-igd";
         if (appWindow.daemonRunning)
             appWindow.stopDaemon(function() {
-                appWindow.startDaemon(simpleModeFlags);
-            });
+            appWindow.startDaemon(simpleModeFlags);
+        });
         else
             appWindow.startDaemon(simpleModeFlags);
     }
@@ -1659,6 +1661,7 @@ ApplicationWindow {
         property string fiatPriceCurrency: "xmrusd"
         property string proxyAddress: "127.0.0.1:9050"
         property bool proxyEnabled: isTails
+        property bool i2p_enabled: false
 
         function getProxyAddress() {
             if ((socksProxyFlagSet && socksProxyFlag == "") || !proxyEnabled)
@@ -2255,11 +2258,11 @@ ApplicationWindow {
         onTriggered: {
             if (currentWallet && !currentWallet.refreshing)
                 currentWallet.storeAsync(function(success) {
-                    if (success)
-                        appWindow.showStatusMessage(qsTr("Autosaved the wallet"), 3);
-                    else
-                        appWindow.showStatusMessage(qsTr("Failed to autosave the wallet"), 3);
-                });
+                if (success)
+                    appWindow.showStatusMessage(qsTr("Autosaved the wallet"), 3);
+                else
+                    appWindow.showStatusMessage(qsTr("Failed to autosave the wallet"), 3);
+            });
 
         }
     }

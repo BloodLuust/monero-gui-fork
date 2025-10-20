@@ -48,6 +48,7 @@
 #include "QRCodeImageProvider.h"
 #include "PendingTransaction.h"
 #include "UnsignedTransaction.h"
+#include "I2PManager.h"
 #include "TranslationManager.h"
 #include "TransactionInfo.h"
 #include "TransactionHistory.h"
@@ -480,6 +481,10 @@ Verify update binary using 'shasum'-compatible (SHA256 algo) output signed by tw
     engine.rootContext()->setContextProperty("daemonManager", &daemonManager);
     engine.rootContext()->setContextProperty("p2poolManager", &p2poolManager);
 #endif
+
+    // Register I2PManager singleton as context property
+    I2PManager* i2pManager = I2PManager::instance();
+    engine.rootContext()->setContextProperty("i2pManager", i2pManager);
 
     engine.rootContext()->setContextProperty("isWindows", isWindows);
     engine.rootContext()->setContextProperty("isMac", isMac);

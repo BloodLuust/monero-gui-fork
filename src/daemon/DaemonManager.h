@@ -38,6 +38,8 @@
 #include <QVariantMap>
 #include "qt/FutureScheduler.h"
 #include "NetworkType.h"
+#include "I2PManager.h"
+#include "qt/MoneroSettings.h"
 
 class DaemonManager : public QObject
 {
@@ -66,6 +68,7 @@ private:
     bool sendCommand(const QStringList &cmd, NetworkType::Type nettype, const QString &dataDir, QString &message) const;
     bool startWatcher(NetworkType::Type nettype, const QString &dataDir) const;
     bool stopWatcher(NetworkType::Type nettype, const QString &dataDir) const;
+    bool startMonerod(const StartParams &params, const QString &i2pProxy = QString());
 signals:
     void daemonStarted() const;
     void daemonStopped() const;
@@ -77,6 +80,9 @@ public slots:
     void printError();
     void stateChanged(QProcess::ProcessState state);
 
+private slots:
+    void onI2PReady(bool success, const QString &socksAddress);
+
 private:
     std::unique_ptr<QProcess> m_daemon;
     QMutex m_daemonMutex;
@@ -84,6 +90,18 @@ private:
     bool m_app_exit = false;
     bool m_noSync = false;
     QString args = "";
+
+    // I2P integration members
+    struct StartParams {
+        QString flags;
+        NetworkType::Type nettype;
+        QString dataDir;
+        QString bootstrapNodeAddress;
+        bool noSync;
+        bool pruneBlockchain;
+    };
+    StartParams m_pendingStartParams;
+    bool m_waitingForI2P = false;
 
     mutable FutureScheduler m_scheduler;
 };

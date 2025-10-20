@@ -28,6 +28,8 @@
 
 #include "DaemonManager.h"
 #include "common/util.h"
+#include "I2PManager.h"
+#include "qt/MoneroSettings.h"
 #include <QElapsedTimer>
 #include <QFile>
 #include <QMutexLocker>
@@ -56,90 +58,28 @@ bool DaemonManager::start(const QString &flags, NetworkType::Type nettype, const
         return false;
     }
 
-    // prepare command line arguments and pass to monerod
-    QStringList arguments;
+    // Store start parameters for potential I2P usage
+    m_pendingStartParams = {flags, nettype, dataDir, bootstrapNodeAddress, noSync, pruneBlockchain};
 
-    // Start daemon with --detach flag on non-windows platforms
-#ifndef Q_OS_WIN
-    arguments << "--detach";
-#endif
-
-    if (nettype == NetworkType::TESTNET)
-        arguments << "--testnet";
-    else if (nettype == NetworkType::STAGENET)
-        arguments << "--stagenet";
-
-    // Custom startup flags for daemon
-    foreach (const QString &str, flags.split(" ")) {
-          qDebug() << QString(" [%1] ").arg(str);
-          if (!str.isEmpty())
-            arguments << str;
-    }
-
-    // Custom data-dir
-    if(!dataDir.isEmpty()) {
-        arguments << "--data-dir" << dataDir;
-    }
-
-    // Bootstrap node address
-    if(!bootstrapNodeAddress.isEmpty()) {
-        arguments << "--bootstrap-daemon-address" << bootstrapNodeAddress;
-    }
-
-    if (pruneBlockchain) {
-        if (!checkLmdbExists(dataDir)) { // check that DB has not already been created
-            arguments << "--prune-blockchain";
-        }
-    }
-
-    if (noSync) {
-        arguments << "--no-sync";
-    }
-
-    arguments << "--check-updates" << "disabled";
-    arguments << "--non-interactive";
-
-    // --max-concurrency based on threads available.
-    int32_t concurrency = qMax(1, QThread::idealThreadCount() / 2);
-
-    if(!flags.contains("--max-concurrency", Qt::CaseSensitive)){
-        arguments << "--max-concurrency" << QString::number(concurrency);
-    }
-
-    qDebug() << "starting monerod " + m_monerod;
-    qDebug() << "With command line arguments " << arguments;
-
-    QMutexLocker locker(&m_daemonMutex);
-
-    m_daemon.reset(new QProcess());
-
-    // Connect output slots
-    connect(m_daemon.get(), SIGNAL(readyReadStandardOutput()), this, SLOT(printOutput()));
-    connect(m_daemon.get(), SIGNAL(readyReadStandardError()), this, SLOT(printError()));
-
-    // Start monerod
-    bool started = m_daemon->startDetached(m_monerod, arguments);
-
-    // add state changed listener
-    connect(m_daemon.get(), SIGNAL(stateChanged(QProcess::ProcessState)), this, SLOT(stateChanged(QProcess::ProcessState)));
-
-    if (!started) {
-        qDebug() << "Daemon start error: " + m_daemon->errorString();
-        emit daemonStartFailure(m_daemon->errorString());
-        return false;
-    }
-
-    // Start start watcher
-    m_scheduler.run([this, nettype, dataDir, noSync] {
-        if (startWatcher(nettype, dataDir)) {
-            emit daemonStarted();
-            m_noSync = noSync;
+    // Check if I2P is enabled
+    I2PManager* i2pManager = I2PManager::instance();
+    if (i2pManager->running()) {
+        // I2P is already running, start monerod directly with I2P proxy
+        return startMonerod(m_pendingStartParams, "127.0.0.1:4447");
+    } else {
+        // Check if I2P should be enabled
+        // Note: We need to access the persistent settings to check i2p_enabled
+        // For now, we'll check if I2P is in starting state or if we should start it
+        if (i2pManager->status() == I2PManager::Status::Starting) {
+            // I2P is starting, wait for it to be ready
+            m_waitingForI2P = true;
+            qDebug() << "Waiting for I2P to be ready before starting monerod";
+            return true;
         } else {
-            emit daemonStartFailure(tr("Timed out, local node is not responding after %1 seconds").arg(DAEMON_START_TIMEOUT_SECONDS));
+            // I2P is not enabled or not running, start monerod normally
+            return startMonerod(m_pendingStartParams);
         }
-    });
-
-    return true;
+    }
 }
 
 void DaemonManager::stopAsync(NetworkType::Type nettype, const QString &dataDir, const QJSValue& callback)
@@ -408,9 +348,128 @@ DaemonManager::DaemonManager(QObject *parent)
     if (m_monerod.length() == 0) {
         qCritical() << "no daemon binary defined for current platform";
     }
+
+    // Connect I2PManager signals
+    I2PManager* i2pManager = I2PManager::instance();
+    connect(i2pManager, &I2PManager::i2pReady, this, &DaemonManager::onI2PReady);
 }
 
 DaemonManager::~DaemonManager()
 {
     m_scheduler.shutdownWaitForFinished();
+}
+
+void DaemonManager::onI2PReady(bool success, const QString &socksAddress)
+{
+    if (success) {
+        qDebug() << "I2P daemon is ready with SOCKS proxy at:" << socksAddress;
+        
+        // If we were waiting for I2P, start monerod now
+        if (m_waitingForI2P) {
+            m_waitingForI2P = false;
+            startMonerod(m_pendingStartParams, socksAddress);
+        }
+    } else {
+        qWarning() << "I2P daemon failed to start or is not ready";
+        
+        // If we were waiting for I2P and it failed, emit daemon start failure
+        if (m_waitingForI2P) {
+            m_waitingForI2P = false;
+            emit daemonStartFailure(tr("I2P daemon failed to start"));
+        }
+    }
+}
+
+bool DaemonManager::startMonerod(const StartParams &params, const QString &i2pProxy)
+{
+    // prepare command line arguments and pass to monerod
+    QStringList arguments;
+
+    // Start daemon with --detach flag on non-windows platforms
+#ifndef Q_OS_WIN
+    arguments << "--detach";
+#endif
+
+    if (params.nettype == NetworkType::TESTNET)
+        arguments << "--testnet";
+    else if (params.nettype == NetworkType::STAGENET)
+        arguments << "--stagenet";
+
+    // Custom startup flags for daemon
+    foreach (const QString &str, params.flags.split(" ")) {
+          qDebug() << QString(" [%1] ").arg(str);
+          if (!str.isEmpty())
+            arguments << str;
+    }
+
+    // Custom data-dir
+    if(!params.dataDir.isEmpty()) {
+        arguments << "--data-dir" << params.dataDir;
+    }
+
+    // Bootstrap node address
+    if(!params.bootstrapNodeAddress.isEmpty()) {
+        arguments << "--bootstrap-daemon-address" << params.bootstrapNodeAddress;
+    }
+
+    if (params.pruneBlockchain) {
+        if (!checkLmdbExists(params.dataDir)) { // check that DB has not already been created
+            arguments << "--prune-blockchain";
+        }
+    }
+
+    if (params.noSync) {
+        arguments << "--no-sync";
+    }
+
+    // Add I2P proxy if provided
+    if (!i2pProxy.isEmpty()) {
+        arguments << "--tx-proxy" << "i2p," + i2pProxy;
+        qDebug() << "Using I2P proxy:" << i2pProxy;
+    }
+
+    arguments << "--check-updates" << "disabled";
+    arguments << "--non-interactive";
+
+    // --max-concurrency based on threads available.
+    int32_t concurrency = qMax(1, QThread::idealThreadCount() / 2);
+
+    if(!params.flags.contains("--max-concurrency", Qt::CaseSensitive)){
+        arguments << "--max-concurrency" << QString::number(concurrency);
+    }
+
+    qDebug() << "starting monerod " + m_monerod;
+    qDebug() << "With command line arguments " << arguments;
+
+    QMutexLocker locker(&m_daemonMutex);
+
+    m_daemon.reset(new QProcess());
+
+    // Connect output slots
+    connect(m_daemon.get(), SIGNAL(readyReadStandardOutput()), this, SLOT(printOutput()));
+    connect(m_daemon.get(), SIGNAL(readyReadStandardError()), this, SLOT(printError()));
+
+    // Start monerod
+    bool started = m_daemon->startDetached(m_monerod, arguments);
+
+    // add state changed listener
+    connect(m_daemon.get(), SIGNAL(stateChanged(QProcess::ProcessState)), this, SLOT(stateChanged(QProcess::ProcessState)));
+
+    if (!started) {
+        qDebug() << "Daemon start error: " + m_daemon->errorString();
+        emit daemonStartFailure(m_daemon->errorString());
+        return false;
+    }
+
+    // Start start watcher
+    m_scheduler.run([this, params] {
+        if (startWatcher(params.nettype, params.dataDir)) {
+            emit daemonStarted();
+            m_noSync = params.noSync;
+        } else {
+            emit daemonStartFailure(tr("Timed out, local node is not responding after %1 seconds").arg(DAEMON_START_TIMEOUT_SECONDS));
+        }
+    });
+
+    return true;
 }

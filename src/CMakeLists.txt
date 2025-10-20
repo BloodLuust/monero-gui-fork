@@ -42,6 +42,8 @@ file(GLOB SOURCE_FILES
     "model/*.cpp"
     "qt/*.h"
     "qt/*.cpp"
+    "I2PManager.cpp"
+    "I2PManager.h"
 )
 if(APPLE)
     list(APPEND SOURCE_FILES "qt/macoshelper.mm")

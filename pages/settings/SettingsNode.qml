@@ -1,21 +1,21 @@
 // Copyright (c) 2014-2024, The Monero Project
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without modification, are
 // permitted provided that the following conditions are met:
-// 
+//
 // 1. Redistributions of source code must retain the above copyright notice, this list of
 //    conditions and the following disclaimer.
-// 
+//
 // 2. Redistributions in binary form must reproduce the above copyright notice, this list
 //    of conditions and the following disclaimer in the documentation and/or other
 //    materials provided with the distribution.
-// 
+//
 // 3. Neither the name of the copyright holder nor the names of its contributors may be
 //    used to endorse or promote products derived from this software without specific
 //    prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
 // MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
@@ -26,29 +26,28 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import QtQuick 2.9
-import QtQuick.Layouts 1.1
-import QtQuick.Controls 2.0
-import FontAwesome 1.0
-
 import "../../components" as MoneroComponents
 import "../../components/effects" as MoneroEffects
+import FontAwesome 1.0
+import QtQuick 2.9
+import QtQuick.Controls 2.0
+import QtQuick.Layouts 1.1
 
-Rectangle{
-    color: "transparent"
-    Layout.fillWidth: true
+Rectangle {
     property alias nodeHeight: root.height
 
-    /* main layout */
+    color: "transparent"
+    Layout.fillWidth: true
+
+    // main layout
     ColumnLayout {
         id: root
+
         anchors.margins: 20
         anchors.topMargin: 0
-
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.right: parent.right
-
         spacing: 0
 
         Rectangle {
@@ -59,6 +58,7 @@ Rectangle{
 
             Rectangle {
                 id: localNodeDivider
+
                 Layout.fillWidth: true
                 anchors.topMargin: 0
                 anchors.left: parent.left
@@ -80,12 +80,13 @@ Rectangle{
             Rectangle {
                 width: parent.width
                 height: localNodeHeader.height + localNodeArea.contentHeight
-                color: "transparent";
+                color: "transparent"
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
 
                 Rectangle {
                     id: localNodeIcon
+
                     color: "transparent"
                     height: 32
                     width: 32
@@ -101,15 +102,17 @@ Rectangle{
                         fontColor: MoneroComponents.Style.defaultFontColor
                         styleName: "Solid"
                     }
+
                 }
 
                 MoneroComponents.TextPlain {
                     id: localNodeHeader
+
                     anchors.left: localNodeIcon.right
                     anchors.leftMargin: 14
                     anchors.top: parent.top
                     color: MoneroComponents.Style.defaultFontColor
-                    opacity: MoneroComponents.Style.blackTheme ? 1.0 : 0.8
+                    opacity: MoneroComponents.Style.blackTheme ? 1 : 0.8
                     font.bold: true
                     font.family: MoneroComponents.Style.fontRegular.name
                     font.pixelSize: 16
@@ -118,6 +121,7 @@ Rectangle{
 
                 Text {
                     id: localNodeArea
+
                     anchors.top: localNodeHeader.bottom
                     anchors.topMargin: 4
                     anchors.left: localNodeIcon.right
@@ -126,12 +130,13 @@ Rectangle{
                     font.family: MoneroComponents.Style.fontRegular.name
                     font.pixelSize: 15
                     horizontalAlignment: TextInput.AlignLeft
-                    wrapMode: Text.WordWrap;
+                    wrapMode: Text.WordWrap
                     leftPadding: 0
                     topPadding: 0
                     text: qsTr("The blockchain is downloaded to your computer. Provides higher security and requires more local storage.") + translationManager.emptyString
                     width: parent.width - (localNodeIcon.width + localNodeIcon.anchors.leftMargin + anchors.leftMargin)
                 }
+
             }
 
             MouseArea {
@@ -143,6 +148,7 @@ Rectangle{
                     appWindow.disconnectRemoteNode();
                 }
             }
+
         }
 
         Rectangle {
@@ -152,6 +158,7 @@ Rectangle{
 
             Rectangle {
                 id: remoteNodeDivider
+
                 Layout.fillWidth: true
                 anchors.topMargin: 0
                 anchors.left: parent.left
@@ -173,12 +180,13 @@ Rectangle{
             Rectangle {
                 width: parent.width
                 height: remoteNodeHeader.height + remoteNodeArea.contentHeight
-                color: "transparent";
+                color: "transparent"
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
 
                 Rectangle {
                     id: remoteNodeIcon
+
                     color: "transparent"
                     height: 32
                     width: 32
@@ -194,15 +202,17 @@ Rectangle{
                         anchors.centerIn: parent
                         fontColor: MoneroComponents.Style.defaultFontColor
                     }
+
                 }
 
                 MoneroComponents.TextPlain {
                     id: remoteNodeHeader
+
                     anchors.left: remoteNodeIcon.right
                     anchors.leftMargin: 14
                     anchors.top: parent.top
                     color: MoneroComponents.Style.defaultFontColor
-                    opacity: MoneroComponents.Style.blackTheme ? 1.0 : 0.8
+                    opacity: MoneroComponents.Style.blackTheme ? 1 : 0.8
                     font.bold: true
                     font.family: MoneroComponents.Style.fontRegular.name
                     font.pixelSize: 16
@@ -211,6 +221,7 @@ Rectangle{
 
                 Text {
                     id: remoteNodeArea
+
                     anchors.top: remoteNodeHeader.bottom
                     anchors.topMargin: 4
                     anchors.left: remoteNodeIcon.right
@@ -219,7 +230,7 @@ Rectangle{
                     font.family: MoneroComponents.Style.fontRegular.name
                     font.pixelSize: 15
                     horizontalAlignment: TextInput.AlignLeft
-                    wrapMode: Text.WordWrap;
+                    wrapMode: Text.WordWrap
                     leftPadding: 0
                     topPadding: 0
                     text: qsTr("Uses a third-party server to connect to the Monero network. Less secure, but easier on your computer.") + translationManager.emptyString
@@ -234,10 +245,12 @@ Rectangle{
                         appWindow.connectRemoteNode();
                     }
                 }
+
             }
 
             Rectangle {
                 id: localNodeBottomDivider
+
                 Layout.fillWidth: true
                 anchors.topMargin: 0
                 anchors.left: parent.left
@@ -247,6 +260,7 @@ Rectangle{
                 color: MoneroComponents.Style.dividerColor
                 opacity: MoneroComponents.Style.dividerOpacity
             }
+
         }
 
         MoneroComponents.WarningBox {
@@ -263,6 +277,7 @@ Rectangle{
 
         ColumnLayout {
             id: localNodeLayout
+
             spacing: 20
             Layout.topMargin: 40
             visible: !persistentSettings.useRemoteNode
@@ -283,11 +298,13 @@ Rectangle{
             RowLayout {
                 MoneroComponents.LineEditMulti {
                     id: blockchainFolder
+
+                    property string style: "<style type='text/css'>a {cursor:pointer;text-decoration: none; color: #FF6C3C}</style>"
+
                     Layout.preferredWidth: 200
                     Layout.fillWidth: true
                     fontSize: 15
                     labelFontSize: 14
-                    property string style: "<style type='text/css'>a {cursor:pointer;text-decoration: none; color: #FF6C3C}</style>"
                     labelText: qsTr("Blockchain location") + style + " <a href='#'> (%1)</a>".arg(qsTr("Change")) + translationManager.emptyString
                     labelButtonText: qsTr("Reset") + translationManager.emptyString
                     labelButtonVisible: text
@@ -298,18 +315,20 @@ Rectangle{
                     addressValidation: false
                     onInputLabelLinkActivated: {
                         //mouse.accepted = false
-                        if(persistentSettings.blockchainDataDir !== ""){
+                        if (persistentSettings.blockchainDataDir !== "")
                             blockchainFileDialog.folder = "file://" + persistentSettings.blockchainDataDir;
-                        }
+
                         blockchainFileDialog.open();
                         blockchainFolder.focus = true;
                     }
                     onLabelButtonClicked: persistentSettings.blockchainDataDir = ""
                 }
+
             }
 
             MoneroComponents.LineEditMulti {
                 id: daemonFlags
+
                 Layout.fillWidth: true
                 labelFontSize: 14
                 fontSize: 15
@@ -321,9 +340,9 @@ Rectangle{
                 addressValidation: false
                 error: text.match(/(^|\s)--(data-dir|bootstrap-daemon-address|non-interactive)/)
                 onEditingFinished: {
-                    if (!daemonFlags.error) {
+                    if (!daemonFlags.error)
                         persistentSettings.daemonFlags = daemonFlags.text;
-                    }
+
                 }
             }
 
@@ -335,24 +354,114 @@ Rectangle{
 
                     MoneroComponents.RemoteNodeEdit {
                         id: bootstrapNodeEdit
+
                         Layout.minimumWidth: 100
                         Layout.bottomMargin: 20
-
                         daemonAddrLabelText: qsTr("Bootstrap Address") + translationManager.emptyString
                         daemonPortLabelText: qsTr("Bootstrap Port") + translationManager.emptyString
                         initialAddress: persistentSettings.bootstrapNodeAddress
                         onEditingFinished: {
-                            if (daemonAddrText == "auto") {
+                            if (daemonAddrText == "auto")
                                 persistentSettings.bootstrapNodeAddress = daemonAddrText;
-                            } else {
+                            else
                                 persistentSettings.bootstrapNodeAddress = daemonAddrText ? bootstrapNodeEdit.getAddress() : "";
-                            }
-                            console.log("setting bootstrap node to " + persistentSettings.bootstrapNodeAddress)
+                            console.log("setting bootstrap node to " + persistentSettings.bootstrapNodeAddress);
                         }
                     }
+
                 }
+
+            }
+
+        }
+
+        // I2P Settings Section
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 1
+            Layout.topMargin: 20
+            color: MoneroComponents.Style.dividerColor
+            opacity: MoneroComponents.Style.dividerOpacity
+        }
+
+        MoneroComponents.TextPlain {
+            Layout.topMargin: 20
+            color: MoneroComponents.Style.defaultFontColor
+            opacity: MoneroComponents.Style.blackTheme ? 1 : 0.8
+            font.bold: true
+            font.family: MoneroComponents.Style.fontRegular.name
+            font.pixelSize: 16
+            text: qsTr("I2P Network Settings") + translationManager.emptyString
+        }
+
+        MoneroComponents.StandardSwitch {
+            id: i2pSwitch
+
+            Layout.topMargin: 10
+            text: qsTr("Enable I2P for all node connections") + translationManager.emptyString
+            checked: persistentSettings.i2p_enabled
+            onClicked: {
+                persistentSettings.i2p_enabled = checked;
+                if (checked)
+                    i2pManager.start();
+                else
+                    i2pManager.stop();
             }
         }
-    }
-}
 
+        MoneroComponents.Label {
+            id: i2pStatusLabel
+
+            Layout.topMargin: 10
+            visible: i2pSwitch.checked
+            text: {
+                switch (i2pManager.status) {
+                case 0:
+                    return qsTr("I2P Status: Disconnected") + translationManager.emptyString;
+                case 1:
+                    return qsTr("I2P Status: Starting...") + translationManager.emptyString;
+                case 2:
+                    return qsTr("I2P Status: Connected") + translationManager.emptyString;
+                case 3:
+                    return qsTr("I2P Status: Error") + translationManager.emptyString;
+                case 4:
+                    return qsTr("I2P Status: Stopping...") + translationManager.emptyString;
+                default:
+                    return qsTr("I2P Status: Unknown") + translationManager.emptyString;
+                }
+            }
+            color: {
+                switch (i2pManager.status) {
+                case 0:
+                    return MoneroComponents.Style.dimmedFontColor;
+                case 1:
+                    return "#FFA500"; // Orange for starting
+                case 2:
+                    return "#00FF00"; // Green for connected
+                case 3:
+                    return "#FF0000"; // Red for error
+                case 4:
+                    return "#FFA500"; // Orange for stopping
+                default:
+                    return MoneroComponents.Style.dimmedFontColor;
+                }
+            }
+            font.family: MoneroComponents.Style.fontRegular.name
+            font.pixelSize: 14
+        }
+
+        MoneroComponents.StandardButton {
+            id: i2pIdentityButton
+
+            Layout.topMargin: 10
+            visible: i2pSwitch.checked
+            text: qsTr("Get New I2P Identity") + translationManager.emptyString
+            small: true
+            onClicked: {
+                i2pManager.generateNewIdentity();
+            }
+        }
+
+    }
+
+}
