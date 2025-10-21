@@ -33,8 +33,8 @@ public slots:
     void generateNewIdentity();
 
 signals:
-    void runningChanged();
-    void statusChanged();
+    void runningChanged(bool running);
+    void statusChanged(Status status);
     void i2pReady(bool success, const QString &socksAddress);
     void i2pStopped();
     void errorOccurred(const QString &errorMsg);

@@ -6,6 +6,7 @@
 #include <QFileInfo>
 #include <QCoreApplication>
 #include <QProcess>
+#include <QProcessEnvironment>
 #include <QDebug>
 
 // C++ Standard Library Includes
@@ -117,9 +118,8 @@ void I2PManager::start()
 
 void I2PManager::stop()
 {
-    if (m_status == Status::Disconnected |
-
-| m_status == Status::Stopping) {
+    if (m_status == Status::Disconnected ||
+        m_status == Status::Stopping) {
         qDebug() << "I2P daemon not running or already stopping";
         return;
     }
@@ -170,6 +170,11 @@ void I2PManager::generateNewIdentity()
 
 QString I2PManager::getPlatformDaemonPath() const
 {
+    const QString overridePath = qEnvironmentVariable("MONERO_GUI_I2PD_PATH");
+    if (!overridePath.isEmpty()) {
+        return overridePath;
+    }
+
     QString basePath = QCoreApplication::applicationDirPath();
 #ifdef Q_OS_MACOS
     // On macOS, executables are in Contents/MacOS inside the app bundle

@@ -88,12 +88,16 @@ void DaemonManager::stopAsync(NetworkType::Type nettype, const QString &dataDir,
         QString message;
         sendCommand({"exit"}, nettype, dataDir, message);
 
-        return QJSValueList({stopWatcher(nettype, dataDir)});
+        QJSValueList result;
+        result << QJSValue(stopWatcher(nettype, dataDir));
+        return result;
     }, callback);
 
     if (!feature.first)
     {
-        QJSValue(callback).call(QJSValueList({false}));
+        QJSValueList args;
+        args << QJSValue(false);
+        QJSValue(callback).call(args);
     }
 }
 
@@ -192,7 +196,9 @@ bool DaemonManager::noSync() const noexcept
 void DaemonManager::runningAsync(NetworkType::Type nettype, const QString &dataDir, const QJSValue& callback) const
 { 
     m_scheduler.run([this, nettype, dataDir] {
-        return QJSValueList({running(nettype, dataDir)});
+        QJSValueList result;
+        result << QJSValue(running(nettype, dataDir));
+        return result;
     }, callback);
 }
 
@@ -227,7 +233,9 @@ void DaemonManager::sendCommandAsync(const QStringList &cmd, NetworkType::Type n
 {
     m_scheduler.run([this, cmd, nettype, dataDir] {
         QString message;
-        return QJSValueList({sendCommand(cmd, nettype, dataDir, message)});
+        QJSValueList result;
+        result << QJSValue(sendCommand(cmd, nettype, dataDir, message));
+        return result;
     }, callback);
 }
 

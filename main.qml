@@ -45,6 +45,7 @@ import "wizard"
 
 ApplicationWindow {
     // committing transaction
+    // uri
 
     id: appWindow
 
@@ -511,8 +512,6 @@ ApplicationWindow {
     }
 
     function onWalletOpened(wallet) {
-        // uri
-
         hideProcessingSplash();
         walletName = usefulName(wallet.path);
         console.log(">>> wallet opened: " + wallet);

@@ -230,12 +230,16 @@ void Wallet::storeAsync(const QJSValue &callback, const QString &path /* = "" */
         [this, path] {
             QMutexLocker locker(&m_asyncMutex);
 
-            return QJSValueList({m_walletImpl->store(path.toStdString())});
+            QJSValueList result;
+            result << QJSValue(m_walletImpl->store(path.toStdString()));
+            return result;
         },
         callback);
     if (!future.first)
     {
-        QJSValue(callback).call(QJSValueList({false}));
+        QJSValueList args;
+        args << QJSValue(false);
+        QJSValue(callback).call(args);
     }
 }
 

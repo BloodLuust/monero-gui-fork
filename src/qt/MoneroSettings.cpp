@@ -80,10 +80,15 @@ void MoneroSettings::load()
         QMetaProperty property = mo->property(i);
         const QVariant previousValue = readProperty(property);
         const QVariant currentValue = this->m_settings->value(property.name(), previousValue);
+        const QMetaType previousType = previousValue.metaType();
 
         if (!currentValue.isNull() && (!previousValue.isValid()
-                || (currentValue.canConvert(previousValue.type()) && previousValue != currentValue))) {
-            property.write(this, currentValue);
+                || ((currentValue.metaType() == previousType || currentValue.canConvert(previousType)) && previousValue != currentValue))) {
+            QVariant resolvedValue = currentValue;
+            if (resolvedValue.metaType() != previousType && resolvedValue.canConvert(previousType)) {
+                resolvedValue.convert(previousType);
+            }
+            property.write(this, resolvedValue);
 #ifdef QT_DEBUG
             qDebug() << "QQmlSettings: load" << property.name() << "setting:" << currentValue << "default:" << previousValue;
 #endif

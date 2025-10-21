@@ -3,6 +3,11 @@ project(monero-gui)
 
 message(STATUS "Initiating compile using CMake ${CMAKE_VERSION}")
 
+include(CTest)
+if(BUILD_TESTING)
+  enable_testing()
+endif()
+
 set(VERSION_MAJOR "18")
 set(VERSION_MINOR "4")
 set(VERSION_REVISION "3")
@@ -403,7 +408,8 @@ endif()
 
 # linker
 if (APPLE)
-  add_linker_flag_if_supported(-Wl,-bind_at_load LD_SECURITY_FLAGS)
+  # ld on modern macOS deprecates -bind_at_load; skip to avoid noisy warnings while
+  # retaining the remaining hardening flags in release builds.
   add_linker_flag_if_supported(-Wl,-dead_strip LD_SECURITY_FLAGS)
   add_linker_flag_if_supported(-Wl,-dead_strip_dylibs LD_SECURITY_FLAGS)
 endif()
@@ -455,3 +461,7 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LD_SECURITY_FLAGS} ${STA
 
 add_subdirectory(translations)
 add_subdirectory(src)
+
+if(BUILD_TESTING)
+  add_subdirectory(tests)
+endif()

@@ -36,6 +36,9 @@
 #include <QObject>
 #include <QScreen>
 #include <QThread>
+#ifdef FELGO_HOT_RELOAD_ENABLED
+#include <FelgoHotReload>
+#endif
 
 #include <version.h>
 
@@ -538,7 +541,13 @@ Verify update binary using 'shasum'-compatible (SHA256 algo) output signed by tw
     engine.rootContext()->setContextProperty("moneroVersion", MONERO_VERSION_FULL);
 
     // Load main window (context properties needs to be defined obove this line)
+#ifdef FELGO_HOT_RELOAD_ENABLED
+    // Initialize Felgo Hot Reload
+    FelgoHotReload felgoHotReload(&engine);
+#else
+    // Load QML normally when FelgoHotReload is not available
     engine.load(QUrl(QStringLiteral("qrc:///main.qml")));
+#endif
     if (engine.rootObjects().isEmpty())
     {
         qCritical() << "Error: no root objects";
